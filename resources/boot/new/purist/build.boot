@@ -1,21 +1,29 @@
 (def project '{{name}})
 (def version "0.1.0-SNAPSHOT")
 
-(set-env! :resource-paths #{"resources"}
-          :source-paths #{"src"}
+(set-env! :resource-paths #{
+                            {{#server}}
+                            "src/clj"
+                            {{/server}}
+                            "resources"}
+          :source-paths #{"src/cljs" "src/garden"}
           :dependencies '[[adzerk/boot-cljs "1.7.228-1" :scope "test"]
                           [adzerk/boot-cljs-repl   "0.3.2" :scope "test"]
                           [adzerk/boot-reload "0.4.11" :scope "test"]
                           [com.cemerick/piggieback "0.2.1"  :scope "test"]
                           [weasel                  "0.7.0"  :scope "test"]
+                          {{#client-only}}
+                          [pandeiro/boot-http "0.7.3" :scope "test"]
+                          {{/client-only}}
 
                           ;; clojure
                           [org.clojure/clojure "1.9.0-alpha10"]
-                          [org.clojure/clojurescript "1.9.93"]
+                          [org.clojure/clojurescript "1.9.198"]
                           [org.clojure/core.async "0.2.385"]
                           [org.clojure/test.check "0.9.0" :scope "test"]
-                          [org.clojure/tools.nrepl "0.2.12"]
+                          [org.clojure/tools.nrepl "0.2.12" :scope "test"]
 
+                          {{#server}}
                           ;; environment
                           [environ "1.0.3"]
                           [boot-environ "1.0.3"]
@@ -29,6 +37,7 @@
                           ;; server
                           [com.datomic/datomic-free   "0.9.5359"]
 
+                          {{/server}}
                           ;; styles
                           [garden "1.3.2"]
                           [org.martinklepsch/boot-garden "1.3.2-0"]
@@ -36,8 +45,9 @@
                           ;; client
                           [org.omcljs/om "1.0.0-alpha41"]])
 
-#_(task-options!
-   aot {:namespace   #{'{{namespace}}}}
+{{#server}}
+(task-options!
+   aot {:namespace   #{'{{name}}}}
    pom {:project     project
         :version     version
         :description "FIXME: write description"
@@ -45,16 +55,23 @@
         :scm         {:url "https://github.com/yourname/{{name}}"}
         :license     {"Eclipse Public License"
                       "http://www.eclipse.org/legal/epl-v10.html"}}
-   jar {:main        '{{namespace}}
+   jar {:main        '{{name}}
         :file        (str "{{name}}-" version "-standalone.jar")})
+{{/server}}
 
 (require
  '[clojure.pprint :refer [pprint]]
  '[adzerk.boot-cljs      :refer [cljs]]
  '[adzerk.boot-cljs-repl :refer [cljs-repl start-repl]]
  '[adzerk.boot-reload    :refer [reload]]
+ {{#server}}
  '[environ.boot :refer [environ]]
- '[org.martinklepsch.boot-garden :refer [garden]])
+ {{/server}}
+ '[org.martinklepsch.boot-garden :refer [garden]]
+ {{#client-only}}
+ '[pandeiro.boot-http    :refer [serve]]
+ {{/client-only}}
+ )
 
 (def garden-prefixes
   [:transition
@@ -67,6 +84,24 @@
    :flex
    :user-select])
 
+{{#client-only}}
+(deftask dev
+  "Run app"
+  []
+  (comp
+   (serve)
+   (watch)
+   (speak)
+   (reload :on-jsload '{{name}}.core/main)
+   (cljs-repl)
+   (cljs :source-map true :optimizations :none)
+   (garden :styles-var '{{name}}.styles/base
+           :output-to "css/styles.css"
+           :vendors ["webkit" "moz"]
+           :auto-prefix garden-prefixes)))
+{{/client-only}}
+
+{{#server}}
 (deftask dev
   "Run a restartable system in the Repl"
   []
@@ -117,4 +152,4 @@
    (cljs :optimizations :advanced)
    (run :main-namespace "{{name}}.core" :arguments [#'prod-system])
    (wait)))
-
+{{/server}}
