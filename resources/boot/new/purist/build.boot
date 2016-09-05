@@ -1,14 +1,13 @@
 (def project '{{name}})
 (def version "0.1.0-SNAPSHOT")
 
-(set-env! :resource-paths #{
-                            {{#server}}
+(set-env! :resource-paths #{{{#server}}
                             "src/clj"
                             {{/server}}
                             "resources"}
           :source-paths #{"src/cljs" "src/garden"}
           :dependencies '[[adzerk/boot-cljs "1.7.228-1" :scope "test"]
-                          [adzerk/boot-cljs-repl   "0.3.2" :scope "test"]
+                          [adzerk/boot-cljs-repl   "0.3.3" :scope "test"]
                           [adzerk/boot-reload "0.4.11" :scope "test"]
                           [com.cemerick/piggieback "0.2.1"  :scope "test"]
                           [weasel                  "0.7.0"  :scope "test"]
@@ -17,8 +16,8 @@
                           {{/client-only}}
 
                           ;; clojure
-                          [org.clojure/clojure "1.9.0-alpha10"]
-                          [org.clojure/clojurescript "1.9.198"]
+                          [org.clojure/clojure "1.9.0-alpha11"]
+                          [org.clojure/clojurescript "1.9.225"]
                           [org.clojure/core.async "0.2.385"]
                           [org.clojure/test.check "0.9.0" :scope "test"]
                           [org.clojure/tools.nrepl "0.2.12" :scope "test"]
@@ -39,11 +38,13 @@
 
                           {{/server}}
                           ;; styles
-                          [garden "1.3.2"]
-                          [org.martinklepsch/boot-garden "1.3.2-0"]
+                          [garden "1.3.0"]
+                          [org.martinklepsch/boot-garden "1.3.0-0"]
 
                           ;; client
-                          [org.omcljs/om "1.0.0-alpha41"]])
+                          [org.omcljs/om "1.0.0-alpha41"]
+                          [sablono "0.7.3"]
+                          [binaryage/devtools "0.8.1" :scope "test"]])
 
 {{#server}}
 (task-options!
@@ -71,18 +72,8 @@
  {{#client-only}}
  '[pandeiro.boot-http    :refer [serve]]
  {{/client-only}}
+ '[danielsz.autoprefixer :refer [autoprefixer]]
  )
-
-(def garden-prefixes
-  [:transition
-   :transition-duration
-   :transition-property
-   :transform
-   :align-items
-   :justify-content
-   :flex-direction
-   :flex
-   :user-select])
 
 {{#client-only}}
 (deftask dev
@@ -96,9 +87,8 @@
    (cljs-repl)
    (cljs :source-map true :optimizations :none)
    (garden :styles-var '{{name}}.styles/base
-           :output-to "css/styles.css"
-           :vendors ["webkit" "moz"]
-           :auto-prefix garden-prefixes)))
+     :output-to "css/styles.css")
+   (autoprefixer :files ["styles.css"])))
 {{/client-only}}
 
 {{#server}}
@@ -113,9 +103,8 @@
    (reload)
    (cljs :source-map true)
    (garden :styles-var '{{name}}.styles/base
-           :output-to "css/styles.css"
-           :vendors ["webkit" "moz"]
-           :auto-prefix garden-prefixes)
+           :output-to "css/styles.css")
+   (autoprefixer :files ["styles.css"])
    (repl :server true)))
 
 (deftask dev-cljs-repl
@@ -130,9 +119,8 @@
    (cljs-repl)
    (cljs :source-map true)
    (garden :styles-var '{{name}}.styles/base
-           :output-to "css/styles.css"
-           :vendors ["webkit" "moz"]
-           :auto-prefix garden-prefixes)))
+     :output-to "css/styles.css")
+   (autoprefixer :files ["styles.css"])))
 
 (deftask dev-run
   "Run a dev system from the command line"
