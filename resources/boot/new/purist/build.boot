@@ -1,7 +1,8 @@
 (def project '{{name}})
 (def version "0.1.0-SNAPSHOT")
 
-(set-env! :resource-paths #{{{#server}}
+(set-env! :resource-paths #{
+                            {{#server}}
                             "src/clj"
                             {{/server}}
                             "resources"}
